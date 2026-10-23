@@ -66,3 +66,4 @@ try {
     // ignore cleanup errors
   }
 }
+
