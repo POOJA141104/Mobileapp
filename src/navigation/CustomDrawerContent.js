@@ -174,7 +174,7 @@ export default function CustomDrawerContent({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Drawer Footer with Examination Info */}
+      {/* Drawer Footer */}
       <View
         style={[
           styles.footerSection,
@@ -184,9 +184,6 @@ export default function CustomDrawerContent({ navigation }) {
         ]}
       >
         <Text style={styles.footerAppTitle}>Pooja Budget Tracker</Text>
-        <Text style={styles.footerNote}>
-          MCA 2025 Semester III • EoS Examinations Oct 2026
-        </Text>
       </View>
     </View>
   );
