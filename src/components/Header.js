@@ -1,198 +1,246 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
-import { colors } from '../theme/colors';
 
-export const Header = ({
+export default function Header({
   title,
   subtitle,
   showBack = false,
-  showCart = true,
-  showDrawer = true,
-  rightAction,
-}) => {
-  const navigation = useNavigation();
+  showMenu = true,
+  showNotification = true,
+  navigation,
+  backgroundColor = '#1E40AF',
+  titleColor = '#FFFFFF',
+  style,
+}) {
   const insets = useSafeAreaInsets();
-  const { cart, userRole, switchUserRole } = useApp();
+  const { notifications, user, switchRole } = useApp();
 
-  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const unreadCount = notifications.length;
 
-  const handleLeftPress = () => {
-    if (showBack) {
-      navigation.goBack();
-    } else if (showDrawer && navigation.openDrawer) {
+  const handleMenuPress = () => {
+    if (navigation?.openDrawer) {
       navigation.openDrawer();
     }
   };
 
-  // Ensure safe area padding for notch, dynamic island, and status bar
-  const safeTopPadding = Math.max(insets.top, Platform.OS === 'ios' ? 44 : 14) + 6;
+  const handleBackPress = () => {
+    if (navigation?.goBack) {
+      navigation.goBack();
+    }
+  };
+
+  const handleNotificationPress = () => {
+    if (navigation?.navigate) {
+      navigation.navigate('Notifications');
+    }
+  };
+
+  const toggleRole = () => {
+    const nextRole = user.role === 'Admin' ? 'Customer' : 'Admin';
+    switchRole(nextRole);
+  };
 
   return (
-    <View style={[styles.headerContainer, { paddingTop: safeTopPadding }]}>
-      <View style={styles.leftRow}>
-        {showBack ? (
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleLeftPress}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.textDark} />
-          </TouchableOpacity>
-        ) : (
-          showDrawer && (
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor,
+          // Guarantee safe distance from mobile notch / status bar / dynamic island
+          paddingTop: Math.max(insets.top, 24) + 8,
+        },
+        style,
+      ]}
+    >
+      <View style={styles.contentRow}>
+        {/* Left Action: Back Button or Drawer Hamburger */}
+        <View style={styles.leftAction}>
+          {showBack ? (
             <TouchableOpacity
-              style={styles.iconButton}
-              onPress={handleLeftPress}
+              onPress={handleBackPress}
+              style={styles.iconCircleButton}
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="menu" size={26} color={colors.textDark} />
+              <Ionicons name="arrow-back" size={24} color="#1E40AF" />
             </TouchableOpacity>
-          )
-        )}
+          ) : showMenu ? (
+            <TouchableOpacity
+              onPress={handleMenuPress}
+              style={styles.iconCircleButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="menu" size={24} color="#1E40AF" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
-        <View style={styles.titleArea}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
+        {/* Center Title / Subtitle */}
+        <View style={styles.centerContent}>
+          {title ? (
+            <Text style={[styles.title, { color: titleColor }]} numberOfLines={1}>
+              {title}
+            </Text>
+          ) : null}
           {subtitle ? (
             <Text style={styles.subtitle} numberOfLines={1}>
               {subtitle}
             </Text>
           ) : null}
         </View>
-      </View>
 
-      <View style={styles.rightRow}>
-        {/* Role Badge - Tapping it switches role easily */}
-        <TouchableOpacity
-          style={[
-            styles.roleBadge,
-            {
-              backgroundColor:
-                userRole === 'admin' ? colors.adminBadgeLight : colors.customerBadgeLight,
-            },
-          ]}
-          onPress={() => switchUserRole(userRole === 'admin' ? 'customer' : 'admin')}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.roleText,
-              { color: userRole === 'admin' ? colors.adminBadge : colors.customerBadge },
-            ]}
-          >
-            {userRole.toUpperCase()}
-          </Text>
-        </TouchableOpacity>
-
-        {rightAction}
-
-        {showCart && (
+        {/* Right Actions: Role Toggle Badge & Notification Bell */}
+        <View style={styles.rightAction}>
+          {/* Quick role indicator / toggle */}
           <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => navigation.navigate('Cart')}
-            activeOpacity={0.7}
+            style={[
+              styles.roleBadge,
+              user.role === 'Admin' ? styles.adminBadge : styles.customerBadge,
+            ]}
+            onPress={toggleRole}
+            activeOpacity={0.8}
           >
-            <Ionicons name="cart-outline" size={24} color={colors.textDark} />
-            {totalCartCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {totalCartCount > 99 ? '99+' : totalCartCount}
-                </Text>
-              </View>
-            )}
+            <Text
+              style={[
+                styles.roleBadgeText,
+                { color: user.role === 'Admin' ? '#FFFFFF' : '#C2410C' },
+              ]}
+            >
+              {user.role}
+            </Text>
           </TouchableOpacity>
-        )}
+
+          {showNotification && (
+            <TouchableOpacity
+              onPress={handleNotificationPress}
+              style={styles.notificationButton}
+              activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#1E40AF" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  headerContainer: {
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
   },
-  leftRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 6,
+  leftAction: {
+    width: 44,
+    alignItems: 'flex-start',
   },
-  iconButton: {
+  iconCircleButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surfaceSubtle,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  titleArea: {
+  centerContent: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
-    color: colors.textDark,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 1,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    fontWeight: '500',
+    marginTop: 2,
   },
-  rightRow: {
+  rightAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'flex-end',
   },
   roleBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 2,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  roleText: {
-    fontSize: 10,
+  customerBadge: {
+    backgroundColor: '#FFEDD5',
+  },
+  adminBadge: {
+    backgroundColor: '#FF6B00',
+  },
+  roleBadgeText: {
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    color: '#1E1238',
+    textTransform: 'uppercase',
   },
-  cartButton: {
+  notificationButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surfaceSubtle,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   badge: {
     position: 'absolute',
-    top: -3,
-    right: -3,
-    backgroundColor: colors.danger,
-    borderRadius: 10,
+    top: 4,
+    right: 4,
+    backgroundColor: '#FF4D4F',
+    borderRadius: 9,
     minWidth: 18,
     height: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     borderWidth: 1.5,
-    borderColor: '#fff',
+    borderColor: '#FFFFFF',
   },
   badgeText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });
+

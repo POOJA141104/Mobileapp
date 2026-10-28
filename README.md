@@ -1,70 +1,90 @@
-# FreshMart - Modern Grocery Shop Mobile App
-### RVS College of Arts and Science (Autonomous)
-**School of Computer Studies (SCS) - MCA Batch 2025 Semester – III**  
-**Core Elective-II: Mobile App Development using React Native**  
-**Model Examinations Oct 2026 - Major Hackathon Requirements (Duration: 6 Hours | Total Marks: 75)**
+# Pooja - Smart Personal Finance & Budget Tracker Mobile App 🚀
+
+A modern, responsive, mobile-first React Native application built with **Expo**, tailored for the **MCA Semester III • EoS Examinations October 2026 Hackathon**.
+
+![Theme](https://img.shields.io/badge/Theme-Royal%20Blue%20%2B%20Orange-1E40AF?style=for-the-badge)
+![Currency](https://img.shields.io/badge/Currency-Indian%20Rupees%20(%E2%82%B9)-FF6B00?style=for-the-badge)
+![Framework](https://img.shields.io/badge/Framework-React%20Native%20%2F%20Expo%20SDK%2058-22C55E?style=for-the-badge)
 
 ---
 
-## 🚀 Quick Run Instructions
+## 🌟 Key Highlights & Rubric Implementation
 
-The app is already initialized, configured, and running!
+### 1. Part I: Complete Core Screens (6 Screens)
+- **Home Screen**: Balance card, dynamic financial report switcher (Daily / Weekly / Monthly), goals progress, recent activity, and quick expense logging.
+- **Financial Analysis Screen**: Multi-period bar charts (Day / Week / Month / Year), income vs. expense cashflow metrics in ₹, and savings targets.
+- **Profile & Edit Profile Screen**: Dynamic user initial avatar, account details, role badge (Customer / Admin), and user preferences.
+- **Transactions Screen (Month-wise)**: Categorized chronological timeline grouped by months (April, March, February 2024), income/expense filters, and Indian Rupee formatting.
+- **Overall Categories Screen**: Grid and list views of spending categories with allocated budgets and spent amounts.
+- **Category Details Screen**: Drill-down view into transactions under specific categories with add-expense capability.
 
-### Dev Server:
-```bash
-# Start dev server (Metro Bundler)
-npx expo start --port 8081
+### 2. Part II: All 3 React Navigation Patterns
+- **Stack Navigation**: Root screen transitions (`AuthStack` -> `MainDrawer` -> `CategoryDetails`, `AddExpense`, `EditProfile`, etc.) with smooth slide animations.
+- **Bottom Tabs Navigation**: Custom floating pill tab bar with active indicator (`Home`, `Analysis`, `Transactions`, `Categories`, `Profile`).
+- **Drawer Navigation**: Comprehensive side navigation drawer styled in **Royal Blue** (`#1E40AF`) with quick role switching, user profile header, and section shortcuts.
 
-# Or open directly in Web Browser:
-npm run web
+### 3. Part III: Functional Requirements
+- **Dual User Roles (Admin / Customer)**: Multi-user role toggle across the entire application with personalized views.
+- **Personalized Alerts & Welcome Banners**: Real-time notifications addressing users by name on login and instant animated feedback on every budget / expense addition.
+- **Dynamic Report Period Selector**: Instant state recalculations for Daily, Weekly, and Monthly balance reports on the Home dashboard.
+- **Indian Rupee Formatting (`₹`)**: All monetary figures formatted in Indian standard numbering (e.g., `₹77,830`).
+- **Notch-Safe Layouts**: Dynamic safe area insets to prevent collisions with camera notches, status bars, and Dynamic Island.
 
-# Or run on Android Emulator / Physical Device:
-npm run android
+---
 
-# Or run on iOS Simulator (macOS):
-npm run ios
+## 🎨 Theme & Palette
+
+- **Sidebar (Drawer)**: Royal Blue (`#1E40AF` / `#172554`)
+- **Action Buttons & Accents**: Bold Energetic Orange (`#FF6B00`)
+- **Background**: Light Blue (`#EBF5FF` / `#DBEAFE`)
+- **Surface Cards**: Crisp White (`#FFFFFF`) with Soft Border Outlines (`#BFDBFE`)
+
+---
+
+## 📂 Project Directory Structure
+
+```text
+├── App.js                     # Root entry point with SafeAreaProvider & AppProvider
+├── app.json                   # Expo configuration & app metadata
+├── eas.json                   # EAS build configuration (APK & iOS)
+├── src/
+│   ├── components/            # Header, TransactionItem, PersonalizedAlert
+│   ├── context/               # AppContext (global state, auth, INR storage)
+│   ├── navigation/            # AppNavigator, CustomTabBar, CustomDrawerContent
+│   ├── screens/
+│   │   ├── auth/              # LaunchScreen, LoginScreen, SignUpScreen
+│   │   └── main/              # Home, Analysis, Transactions, Categories, etc.
+│   └── utils/                 # currency.js (formatINR), mockData.js
+└── assets/                    # Icons and assets
 ```
 
-Once running, navigate to:  
-👉 **`http://localhost:8081`** in any web browser, or scan the QR code with **Expo Go** on Android/iOS!
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher)
+- Expo Go App on Android / iOS
+
+### Installation & Run
+```bash
+# Clone the repository
+git clone https://github.com/POOJA141104/Mobileapp.git
+
+# Navigate to directory
+cd Mobileapp
+
+# Install dependencies
+npm install
+
+# Start the Expo development server
+npx expo start --tunnel --go
+```
+
+Scan the terminal QR code using **Expo Go** on Android or the Camera app on iOS!
 
 ---
 
-## 📋 Evaluation Checklist & Marks Breakdown
-
-### Part – I: React Native Screens (30 Marks)
-| Screen | Description & Functionality | Marks | Status |
-|---|---|:---:|:---:|
-| **1. Home Screen (Sign Up & Sign In)** | Dual role (Admin & Customer), validation (email, password min 6, phone 10-digits), quick 1-click evaluation logins | 5 | ✅ Complete |
-| **2. Daily Grocery Products List** | Search bar with live filtering, category pills, banner offer, discount tags, rating stars, "+ Add" / quantity steppers, Admin Add/Edit/Delete actions | 5 | ✅ Complete |
-| **3. Profile and Edit Profile Screen** | Customer avatar selector, editable profile details with form validation, recent orders list, preferences toggles, sign-out | 5 | ✅ Complete |
-| **4. Add Favorite Screen** | Wishlisted products list, remove from favorites, individual add-to-cart, one-click "Add All to Cart" button | 5 | ✅ Complete |
-| **5. Product Details Screen** | Hero image showcase, nutrition breakdown, shelf life & origin, live stock status, interactive quantity counter, dynamic price calculation | 5 | ✅ Complete |
-| **6. My Cart Screen** | Cart items with +/- stepper controls, delete button, promo coupon engine (`FRESH50`, `SAVE20`, `RVS100`), delivery fee & taxes breakdown, checkout modal | 5 | ✅ Complete |
-
-### Part – II: React Navigation (30 Marks)
-| Navigation Type | Implementation | Marks | Status |
-|---|---|:---:|:---:|
-| **(i) Stack Navigation** | `createNativeStackNavigator` managing Auth, Main Drawer/Tabs, Product Details, Cart, Favorites, Profile | 10 | ✅ Complete |
-| **(ii) Tabs Navigation** | `createBottomTabNavigator` with custom icons, badge notifications (cart items count & favorites count), and active theme colors | 10 | ✅ Complete |
-| **(iii) Drawer Navigation** | `createDrawerNavigator` with custom header, user card, role switcher, links to all app modules, and sign out | 10 | ✅ Complete |
-
-### Part – III: Functional Requirements (15 Marks)
-| Requirement | Description | Marks | Status |
-|---|---|:---:|:---:|
-| **(i) Screen Navigation** | All users can navigate between all screens via Drawer, Bottom Tabs, Stack transitions, and Header buttons | 5 | ✅ Complete |
-| **(ii) Add Products to Cart** | Add single or multiple products from Products screen and/or Favorites screen to cart | 5 | ✅ Complete |
-| **(iii) Add / Subtract in Cart** | Real-time `+` and `-` quantity controls in Cart screen with dynamic bill recalculations | 5 | ✅ Complete |
-
----
-
-## 🎨 Figma Design Alignment (>75% Matching)
-- **Palette**: Emerald Fresh Green (`#10B981`, `#059669`), warm accent amber (`#F59E0B`), coral red for discounts (`#EF4444`).
-- **Cards & Layout**: Rounded `16px` borders, soft drop shadows, clean typography, badge pills.
-- **Micro-Interactions**: Floating cart badges, toast notifications on all cart/favorite actions, interactive quantity steppers.
-
-## 👥 Dual User Mode Demo
-- **Customer**: Browse products, search, filter categories, view product details, toggle favorites, add to cart, edit customer profile, place orders.
-- **Admin**: Add new grocery products into the catalog with price/stock/unit validation, edit product details, delete items from store, view store cart status.
-- **Quick Switch**: Tap the Role Badge in the header or the Drawer to instantly toggle between Admin and Customer modes!
-
+## 👩‍💻 Author
+- **GitHub**: [@POOJA141104](https://github.com/POOJA141104)
+- **Examination**: MCA Semester III • EoS Examinations Oct 2026

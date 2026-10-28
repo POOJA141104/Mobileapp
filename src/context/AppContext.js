@@ -1,350 +1,345 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import { INITIAL_PRODUCTS, INITIAL_USER, INITIAL_ADMIN, MOCK_COUPONS } from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  INITIAL_USER,
+  INITIAL_CATEGORIES,
+  INITIAL_TRANSACTIONS,
+  INITIAL_NOTIFICATIONS,
+} from '../utils/mockData';
+import { formatINR } from '../utils/currency';
 
-const AppContext = createContext(null);
+const AppContext = createContext();
+
+const STORAGE_KEYS = {
+  USER: '@pooja_user',
+  TRANSACTIONS: '@pooja_transactions',
+  CATEGORIES: '@pooja_categories',
+  NOTIFICATIONS: '@pooja_notifications',
+};
 
 export const AppProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(INITIAL_USER);
-  const [userRole, setUserRole] = useState('customer'); // 'customer' or 'admin'
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [user, setUser] = useState(INITIAL_USER);
+  const [transactions, setTransactions] = useState(INITIAL_TRANSACTIONS);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // starts at Login/Auth screen
+  const [homeReportType, setHomeReportType] = useState('Monthly'); // 'Daily' | 'Weekly' | 'Monthly'
 
-  // Products state (Admin can add/edit/delete)
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  // Personalized alert banner state
+  const [activeAlert, setActiveAlert] = useState(null);
 
-  // Favorites state (Product IDs)
-  const [favoriteIds, setFavoriteIds] = useState(['prod_1', 'prod_4', 'prod_11']);
+  // Load from AsyncStorage if available
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const savedUser = await AsyncStorage.getItem(STORAGE_KEYS.USER);
+        if (savedUser) setUser(JSON.parse(savedUser));
 
-  // Cart state: [{ product, quantity }]
-  const [cart, setCart] = useState([
-    { product: INITIAL_PRODUCTS[0], quantity: 2 },
-    { product: INITIAL_PRODUCTS[2], quantity: 1 },
-  ]);
+        const savedTx = await AsyncStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
+        if (savedTx) setTransactions(JSON.parse(savedTx));
 
-  // Promo code
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+        const savedCats = await AsyncStorage.getItem(STORAGE_KEYS.CATEGORIES);
+        if (savedCats) setCategories(JSON.parse(savedCats));
 
-  // Toast feedback
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-
-  // Completed orders
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD-98214',
-      date: '2026-10-20',
-      itemsCount: 3,
-      total: 325,
-      status: 'Delivered',
-      items: ['Fresh Organic Red Apples (2)', 'Organic Farm Tomatoes (1)'],
-    },
-  ]);
-
-  // Notification helper
-  const showToast = (message, type = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, visible: false }));
-    }, 2800);
-  };
-
-  // Auth Functions
-  const login = (email, password, role = 'customer') => {
-    if (role === 'admin') {
-      setCurrentUser(INITIAL_ADMIN);
-      setUserRole('admin');
-    } else {
-      setCurrentUser({
-        ...INITIAL_USER,
-        email: email || INITIAL_USER.email,
-      });
-      setUserRole('customer');
-    }
-    setIsAuthenticated(true);
-    showToast(`Signed in successfully as ${role.toUpperCase()}!`, 'success');
-  };
-
-  const signup = (name, email, phone, password, role = 'customer') => {
-    const newUser = {
-      name,
-      email,
-      phone,
-      address: 'Sulur, Coimbatore, Tamil Nadu',
-      role,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      memberSince: 'Oct 2026',
-      ordersCount: 0,
+        const savedNotifs = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS);
+        if (savedNotifs) setNotifications(JSON.parse(savedNotifs));
+      } catch (err) {
+        console.warn('Error loading storage:', err);
+      }
     };
-    setCurrentUser(newUser);
-    setUserRole(role);
+    loadSavedData();
+  }, []);
+
+  // Save changes to AsyncStorage
+  const persistData = async (key, val) => {
+    try {
+      await AsyncStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {
+      console.warn('Persist error:', e);
+    }
+  };
+
+  // Helper to trigger personalized alert (Part III - Requirement ii)
+  const triggerPersonalizedAlert = (title, message, type = 'success') => {
+    const alertObj = {
+      id: Date.now().toString(),
+      title,
+      message,
+      type, // 'success' | 'warning' | 'info'
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setActiveAlert(alertObj);
+
+    // Auto dismiss after 6 seconds
+    setTimeout(() => {
+      setActiveAlert((current) => (current && current.id === alertObj.id ? null : current));
+    }, 6000);
+  };
+
+  const dismissAlert = () => {
+    setActiveAlert(null);
+  };
+
+  // Calculate overall financial metrics
+  const totalIncome = transactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const totalExpense = transactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const totalBalance = totalIncome - totalExpense;
+
+  // Add Transaction
+  const addTransaction = (newTx) => {
+    const createdTx = {
+      id: 'tx_' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      month: 'April 2024',
+      ...newTx,
+      amount: Number(newTx.amount),
+    };
+
+    const updatedTransactions = [createdTx, ...transactions];
+    setTransactions(updatedTransactions);
+    persistData(STORAGE_KEYS.TRANSACTIONS, updatedTransactions);
+
+    // Update Category total if expense
+    if (createdTx.type === 'expense' && createdTx.category) {
+      const updatedCategories = categories.map((cat) => {
+        if (cat.name.toLowerCase() === createdTx.category.toLowerCase()) {
+          return { ...cat, spent: cat.spent + createdTx.amount };
+        }
+        return cat;
+      });
+      setCategories(updatedCategories);
+      persistData(STORAGE_KEYS.CATEGORIES, updatedCategories);
+    }
+
+    // Personalized Alert Message (Part III - ii)
+    const formattedAmt = formatINR(createdTx.amount);
+    let alertMsg = '';
+    if (createdTx.type === 'expense') {
+      alertMsg = `₹ Alert: You recorded an expense of ${formattedAmt} under ${createdTx.category}. You're on track with your monthly budget!`;
+    } else {
+      alertMsg = `₹ Awesome! ${formattedAmt} credited to your balance from ${createdTx.title}. Net balance updated!`;
+    }
+
+    triggerPersonalizedAlert('Transaction Saved', alertMsg, createdTx.type === 'expense' ? 'info' : 'success');
+
+    // Add to Notification list
+    const newNotif = {
+      id: 'notif_' + Date.now(),
+      title: 'Transactions',
+      message: `A new transaction has been registered: ${createdTx.title} | ${createdTx.category} | ${createdTx.type === 'expense' ? '-' : '+'}${formattedAmt}`,
+      time: `${createdTx.time} - Today`,
+      category: 'Today',
+      icon: createdTx.type === 'expense' ? 'trending-down-outline' : 'trending-up-outline',
+      type: 'transaction',
+    };
+    const updatedNotifs = [newNotif, ...notifications];
+    setNotifications(updatedNotifs);
+    persistData(STORAGE_KEYS.NOTIFICATIONS, updatedNotifs);
+
+    return createdTx;
+  };
+
+  // Edit Transaction
+  const editTransaction = (id, updatedFields) => {
+    const existing = transactions.find((t) => t.id === id);
+    if (!existing) return;
+
+    const updatedTransactions = transactions.map((t) =>
+      t.id === id ? { ...t, ...updatedFields, amount: Number(updatedFields.amount || t.amount) } : t
+    );
+    setTransactions(updatedTransactions);
+    persistData(STORAGE_KEYS.TRANSACTIONS, updatedTransactions);
+
+    const formattedAmt = formatINR(updatedFields.amount || existing.amount);
+    triggerPersonalizedAlert(
+      'Transaction Updated',
+      `Personalized Notice: ${existing.title} was modified to ${formattedAmt}. Your financial report has been updated.`,
+      'info'
+    );
+  };
+
+  // Delete Transaction
+  const deleteTransaction = (id) => {
+    const existing = transactions.find((t) => t.id === id);
+    const updatedTransactions = transactions.filter((t) => t.id !== id);
+    setTransactions(updatedTransactions);
+    persistData(STORAGE_KEYS.TRANSACTIONS, updatedTransactions);
+
+    if (existing) {
+      triggerPersonalizedAlert(
+        'Transaction Removed',
+        `Personalized Alert: Transaction "${existing.title}" (${formatINR(existing.amount)}) has been removed. Balance recalculated.`,
+        'warning'
+      );
+    }
+  };
+
+  // Authentication Handlers
+  const login = (emailOrName, password, role = 'Customer') => {
+    const isRoleAdmin = role === 'Admin';
+    const defaultEmail = isRoleAdmin ? 'admin@poojaapp.in' : 'john.smith@example.com';
+    const rawInput = (emailOrName && emailOrName.trim()) || '';
+
+    // Calculate personalized display name from whatever the user typed
+    let resolvedName = '';
+    let resolvedEmail = '';
+
+    if (rawInput) {
+      if (rawInput.includes('@')) {
+        resolvedEmail = rawInput;
+        const prefix = rawInput.split('@')[0].replace(/[._-]/g, ' ');
+        resolvedName = prefix
+          .split(' ')
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ');
+      } else {
+        // User typed a custom name e.g. "Pooja", "Arun Kumar", "Admin Head"
+        resolvedName = rawInput
+          .split(' ')
+          .filter(Boolean)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        resolvedEmail = `${rawInput.toLowerCase().replace(/\s+/g, '')}@poojaapp.in`;
+      }
+    } else {
+      resolvedName = isRoleAdmin ? 'Administrator' : 'John Smith';
+      resolvedEmail = defaultEmail;
+    }
+
+    const updated = {
+      ...user,
+      name: resolvedName,
+      email: resolvedEmail,
+      role: role || 'Customer',
+    };
+
+    setUser(updated);
     setIsAuthenticated(true);
-    showToast(`Welcome ${name}! Account created as ${role.toUpperCase()}.`, 'success');
+    persistData(STORAGE_KEYS.USER, updated);
+
+    // Personalized Alert Message prominently addressing the logged in user by name!
+    triggerPersonalizedAlert(
+      `Welcome, ${resolvedName}!`,
+      `Hi ${resolvedName}, you have successfully signed in as ${updated.role}! Your personalized ₹ budget tracker is ready.`,
+      'success'
+    );
+  };
+
+  const signUp = (userData) => {
+    const rawName = userData.name && userData.name.trim() ? userData.name.trim() : 'Customer User';
+    const newUser = {
+      ...user,
+      ...userData,
+      name: rawName,
+      id: Math.floor(10000000 + Math.random() * 90000000).toString(),
+      role: userData.role || 'Customer',
+    };
+    setUser(newUser);
+    setIsAuthenticated(true);
+    persistData(STORAGE_KEYS.USER, newUser);
+
+    triggerPersonalizedAlert(
+      `Welcome to Pooja, ${newUser.name}!`,
+      `Account created successfully for ${newUser.name} (${newUser.role}). Start managing your finances in ₹!`,
+      'success'
+    );
   };
 
   const logout = () => {
     setIsAuthenticated(false);
-    showToast('Signed out successfully.', 'info');
   };
 
-  const switchUserRole = (newRole) => {
-    if (newRole === 'admin') {
-      setCurrentUser(INITIAL_ADMIN);
-      setUserRole('admin');
-      showToast('Switched to Admin Role!', 'success');
-    } else {
-      setCurrentUser(INITIAL_USER);
-      setUserRole('customer');
-      showToast('Switched to Customer Role!', 'success');
-    }
+  const updateProfile = (profileData) => {
+    const updated = { ...user, ...profileData };
+    setUser(updated);
+    persistData(STORAGE_KEYS.USER, updated);
+    triggerPersonalizedAlert('Profile Updated', 'Your personal account settings have been saved successfully.', 'success');
   };
 
-  // Profile update
-  const updateUserProfile = (updatedFields) => {
-    setCurrentUser((prev) => ({
-      ...prev,
-      ...updatedFields,
-    }));
-    showToast('Profile updated successfully!', 'success');
-  };
-
-  // Favorites Management
-  const toggleFavorite = (product) => {
-    setFavoriteIds((prev) => {
-      const exists = prev.includes(product.id);
-      if (exists) {
-        showToast(`Removed "${product.name}" from favorites.`, 'info');
-        return prev.filter((id) => id !== product.id);
-      } else {
-        showToast(`Added "${product.name}" to favorites! ❤️`, 'success');
-        return [...prev, product.id];
-      }
-    });
-  };
-
-  const isFavorite = (productId) => favoriteIds.includes(productId);
-
-  const getFavoriteProducts = () => {
-    return products.filter((p) => favoriteIds.includes(p.id));
-  };
-
-  // Cart Management
-  const addToCart = (product, quantity = 1) => {
-    setCart((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        const newQty = updated[existingIndex].quantity + quantity;
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: newQty,
-        };
-        showToast(`Updated "${product.name}" quantity to ${newQty} in cart!`, 'success');
-        return updated;
-      } else {
-        showToast(`Added ${quantity}x "${product.name}" to cart! 🛒`, 'success');
-        return [...prev, { product, quantity }];
-      }
-    });
-  };
-
-  const updateCartQuantity = (productId, delta) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === productId);
-      if (!existing) return prev;
-
-      const newQty = existing.quantity + delta;
-      if (newQty <= 0) {
-        showToast(`Removed "${existing.product.name}" from cart.`, 'info');
-        return prev.filter((item) => item.product.id !== productId);
-      }
-
-      return prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity: newQty } : item
-      );
-    });
-  };
-
-  const removeFromCart = (productId) => {
-    setCart((prev) => {
-      const item = prev.find((i) => i.product.id === productId);
-      if (item) {
-        showToast(`Removed "${item.product.name}" from cart.`, 'info');
-      }
-      return prev.filter((i) => i.product.id !== productId);
-    });
-  };
-
-  const clearCart = () => {
-    setCart([]);
-    setAppliedCoupon(null);
-    showToast('Cart has been cleared.', 'info');
-  };
-
-  const addAllFavoritesToCart = () => {
-    const favProducts = getFavoriteProducts();
-    if (favProducts.length === 0) {
-      showToast('No favorite products to add!', 'warning');
-      return;
-    }
-
-    setCart((prev) => {
-      let updated = [...prev];
-      favProducts.forEach((prod) => {
-        const idx = updated.findIndex((item) => item.product.id === prod.id);
-        if (idx > -1) {
-          updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
-        } else {
-          updated.push({ product: prod, quantity: 1 });
-        }
-      });
-      return updated;
-    });
-    showToast(`Added all ${favProducts.length} favorites to cart! 🛒`, 'success');
-  };
-
-  // Coupons
-  const applyCoupon = (code) => {
-    const cleanCode = code.trim().toUpperCase();
-    const coupon = MOCK_COUPONS[cleanCode];
-
-    if (!coupon) {
-      showToast(`Invalid coupon code "${code}". Try FRESH50, SAVE20, or RVS100.`, 'danger');
-      return false;
-    }
-
-    const { subtotal } = calculateTotals();
-    if (subtotal < coupon.minOrder) {
-      showToast(`Coupon requires minimum order of ₹${coupon.minOrder}.`, 'warning');
-      return false;
-    }
-
-    setAppliedCoupon({ code: cleanCode, ...coupon });
-    showToast(`Coupon "${cleanCode}" applied! 🎉`, 'success');
-    return true;
-  };
-
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    showToast('Coupon removed.', 'info');
-  };
-
-  // Cart Calculations
-  const calculateTotals = () => {
-    const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-    let discount = 0;
-    if (appliedCoupon) {
-      if (appliedCoupon.discount) {
-        discount = appliedCoupon.discount;
-      } else if (appliedCoupon.percentage) {
-        discount = Math.min((subtotal * appliedCoupon.percentage) / 100, appliedCoupon.maxDiscount || 9999);
-      }
-    }
-
-    // Delivery fee: Free over ₹300, else ₹30
-    const deliveryFee = subtotal > 300 || subtotal === 0 ? 0 : 30;
-    const taxesAndPacking = subtotal > 0 ? 15 : 0;
-    const grandTotal = Math.max(0, subtotal - discount + deliveryFee + taxesAndPacking);
-
-    return {
-      subtotal,
-      totalItems,
-      discount: Math.round(discount),
-      deliveryFee,
-      taxesAndPacking,
-      grandTotal: Math.round(grandTotal),
-    };
-  };
-
-  // Order Placement
-  const checkoutOrder = (deliveryAddress, paymentMethod) => {
-    const { grandTotal, totalItems } = calculateTotals();
-    const newOrder = {
-      id: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
-      date: new Date().toISOString().split('T')[0],
-      itemsCount: totalItems,
-      total: grandTotal,
-      status: 'Processing',
-      deliveryAddress: deliveryAddress || currentUser.address,
-      paymentMethod: paymentMethod || 'Cash on Delivery (COD)',
-      items: cart.map((i) => `${i.product.name} (x${i.quantity})`),
-    };
-
-    setOrders((prev) => [newOrder, ...prev]);
-    setCart([]);
-    setAppliedCoupon(null);
-    setCurrentUser((prev) => ({
-      ...prev,
-      ordersCount: (prev.ordersCount || 0) + 1,
-    }));
-    return newOrder;
-  };
-
-  // Admin Product Actions
-  const adminAddProduct = (newProd) => {
-    const id = `prod_${Date.now()}`;
-    const product = {
-      id,
-      rating: 4.8,
-      reviewsCount: 1,
-      stock: parseInt(newProd.stock, 10) || 10,
-      price: parseFloat(newProd.price) || 50,
-      originalPrice: (parseFloat(newProd.price) || 50) * 1.25,
-      discount: '20% OFF',
-      ...newProd,
-    };
-    setProducts((prev) => [product, ...prev]);
-    showToast(`Added new product "${product.name}"!`, 'success');
-    return product;
-  };
-
-  const adminUpdateProduct = (updatedProd) => {
-    setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProd.id ? { ...p, ...updatedProd } : p))
+  const switchRole = (newRole) => {
+    const updated = { ...user, role: newRole };
+    setUser(updated);
+    persistData(STORAGE_KEYS.USER, updated);
+    triggerPersonalizedAlert(
+      'Role Switched',
+      `Switched view to ${newRole} mode. All permissions and navigation updated.`,
+      'info'
     );
-    showToast(`Updated "${updatedProd.name}" successfully!`, 'success');
   };
 
-  const adminDeleteProduct = (productId) => {
-    const target = products.find((p) => p.id === productId);
-    setProducts((prev) => prev.filter((p) => p.id !== productId));
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
-    setFavoriteIds((prev) => prev.filter((id) => id !== productId));
-    showToast(`Deleted "${target?.name || 'Product'}" from store!`, 'info');
+  // Dynamic reports data for Daily, Weekly, Monthly (Part III - iii)
+  const getReportData = (period = homeReportType) => {
+    if (period === 'Daily') {
+      return {
+        balance: 77830,
+        income: 15000,
+        expense: 2600,
+        savingsRate: '35%',
+        revenueLastPeriod: 15000,
+        foodLastPeriod: 2600,
+        label: 'Today',
+        transactions: transactions.filter((t) => t.date === '2024-04-30' || t.title === 'Dinner' || t.title === 'Salary'),
+      };
+    } else if (period === 'Weekly') {
+      return {
+        balance: 145000,
+        income: 40000,
+        expense: 8200,
+        savingsRate: '42%',
+        revenueLastPeriod: 40000,
+        foodLastPeriod: 3900,
+        label: 'This Week',
+        transactions: transactions.slice(0, 5),
+      };
+    } else {
+      // Monthly
+      return {
+        balance: totalBalance > 0 ? totalBalance : 778300,
+        income: totalIncome > 0 ? totalIncome : 150000,
+        expense: totalExpense > 0 ? totalExpense : 36220,
+        savingsRate: '30%',
+        revenueLastPeriod: 150000,
+        foodLastPeriod: 15450,
+        label: 'This Month',
+        transactions: transactions.slice(0, 6),
+      };
+    }
   };
 
   return (
     <AppContext.Provider
       value={{
-        currentUser,
-        userRole,
+        user,
+        role: user.role,
         isAuthenticated,
-        products,
-        favoriteIds,
-        cart,
-        appliedCoupon,
-        orders,
-        toast,
-        showToast,
+        transactions,
+        categories,
+        notifications,
+        activeAlert,
+        homeReportType,
+        setHomeReportType,
+        totalBalance,
+        totalIncome,
+        totalExpense,
         login,
-        signup,
+        signUp,
         logout,
-        switchUserRole,
-        updateUserProfile,
-        toggleFavorite,
-        isFavorite,
-        getFavoriteProducts,
-        addToCart,
-        updateCartQuantity,
-        removeFromCart,
-        clearCart,
-        addAllFavoritesToCart,
-        applyCoupon,
-        removeCoupon,
-        calculateTotals,
-        checkoutOrder,
-        adminAddProduct,
-        adminUpdateProduct,
-        adminDeleteProduct,
+        updateProfile,
+        switchRole,
+        addTransaction,
+        editTransaction,
+        deleteTransaction,
+        triggerPersonalizedAlert,
+        dismissAlert,
+        getReportData,
       }}
     >
       {children}

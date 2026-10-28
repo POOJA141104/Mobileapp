@@ -1,38 +1,29 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppProvider } from './src/context/AppContext';
-import { RootNavigator } from './src/navigation/RootNavigator';
-import { ToastMessage } from './src/components/ToastMessage';
+import AppNavigator from './src/navigation/AppNavigator';
+import PersonalizedAlert from './src/components/PersonalizedAlert';
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <AppProvider>
-          <NavigationContainer documentTitle={{ formatter: () => 'FreshMart Grocery' }}>
-            <View style={styles.appContainer}>
-              <StatusBar style="dark" />
-              <ToastMessage />
-              <RootNavigator />
-            </View>
-          </NavigationContainer>
-        </AppProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <AppProvider>
+        <View style={styles.container}>
+          <StatusBar style="light" backgroundColor="transparent" translucent />
+          <AppNavigator />
+          <PersonalizedAlert />
+        </View>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  container: {
     flex: 1,
-  },
-  appContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#1E40AF',
   },
 });
