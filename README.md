@@ -12,7 +12,7 @@ A modern, responsive, mobile-first React Native application built with **Expo**,
 
 ### 1. Part I: Complete Core Screens (6 Screens)
 - **Home Screen**: Balance card, dynamic financial report switcher (Daily / Weekly / Monthly), goals progress, recent activity, and quick expense logging.
-- **Financial Analysis Screen**: Multi-period bar charts (Day / Week / Month / Year), income vs. expense cashflow metrics in ₹, and savings targets.
+- **Financial Analysis Screen**: Multi-period bar charts (Day / Week / Month / Year), interactive Financial Calendar with detailed daily breakdown & transaction logs in ₹, income vs. expense cashflow metrics, and savings targets.
 - **Profile & Edit Profile Screen**: Dynamic user initial avatar, account details, role badge (Customer / Admin), and user preferences.
 - **Transactions Screen (Month-wise)**: Categorized chronological timeline grouped by months (April, March, February 2024), income/expense filters, and Indian Rupee formatting.
 - **Overall Categories Screen**: Grid and list views of spending categories with allocated budgets and spent amounts.
@@ -88,3 +88,4 @@ Scan the terminal QR code using **Expo Go** on Android or the Camera app on iOS!
 ## 👩‍💻 Author
 - **GitHub**: [@POOJA141104](https://github.com/POOJA141104)
 - **Examination**: MCA Semester III • EoS Examinations Oct 2026
+
